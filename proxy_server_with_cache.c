@@ -26,18 +26,18 @@ struct cache_element {
   char *url;
   time_t lru_time_track; // time based lru least recently used one is removed
   cache_element *next;   // to maintain a link btw cache elements all cache are
-                       // stored like a linked list
+                         // stored like a linked list
 };
 
-cache_element *find(char *url);
+cache_element *find(char *url); /*defined function to find url */
 int add_cache_element(char *data, int size, char *url);
 void remove_cache_element();
 
 int port_number = 8080;
 int proxy_socketId; // each client will have its own socket id while connecting
                     // to the server
-pthread_t tid[MAX_CLIENTS]; // we are spawning a thread for each client maximum
-                            // here 10 clients as defined above
+pthread_t tid[MAX_CLIENTS]; // we are spawning a thread for each client
+/* here 10 clients as defined above an array of threadid for each client */
 sem_t semaphore;
 pthread_mutex_t lock;
 
@@ -47,9 +47,11 @@ int cache_size;
 int main(int argc, char *argv[]) {
   int client_socketId, client_len;
   struct sockaddr_in server_addr, client_addr;
-  sem_init(&semaphore, 0, MAX_CLIENTS);
-  pthread_mutex_init(&lock, NULL);
-  if (argv == 2) {
+  sem_init(&semaphore, 0,
+           MAX_CLIENTS); // intitializing semaphore with value 10 MAX_CLIENTS
+  pthread_mutex_init(&lock, NULL); // initializing the mutex lock not actually
+                                   // locking the critical section
+  if (argc == 2) {
     port_number = atoi(argv[1]); // atoi taken input from cmd line ./proxy 8080
                                  // here 8080 is 1 element like a array
   } else {
@@ -102,5 +104,17 @@ int main(int argc, char *argv[]) {
     } else {
       Connected_socketId[i] = client_socketId;
     }
+
+    struct sockaddr *client_pt = (struct sockaddr_in *)&client_addr;
+    struct in_addr ip_addr = client_pt->sin_addr;
+    char str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &ip_addr, str, INET_ADDRSTRLEN);
+    printf("client is connected with port number %d and ip address is %s\n",
+           ntohs(client_addr.sin_port, str));
+
+    pthread_create(&tid[i], NULL, thread_fn, (void *)&Connected_socketId[i]);
+    i++;
   }
+  close(proxy_socketId);
+  return 0;
 }
